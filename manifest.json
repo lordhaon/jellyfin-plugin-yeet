@@ -7,6 +7,15 @@
     "owner": "lordhaon",
     "category": "General",
     "imageUrl": "",
-    "versions": []
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "First release",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/lordhaon/jellyfin-plugin-yeet/releases/download/v1.0.0/yeet_1.0.0.0.zip",
+        "checksum": "f0b61f8e13f1fc30498f13bd16560f39",
+        "timestamp": "2026-10-03T16:26:13Z"
+      }
+    ]
   }
 ]
