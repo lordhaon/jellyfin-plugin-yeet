@@ -1,0 +1,12 @@
+[
+  {
+    "guid": "7ee537fa-deb2-43dc-8ba6-7cd0bce1242c",
+    "name": "YEET - Your Entertainment, Elsewhere, Televised",
+    "overview": "Send a movie or show to another device from the item menu.",
+    "description": "Adds a 'Yeet to device' option to the item menu. Pick a device and it starts playing there. Devices that are off are turned on first: a Roku directly over the network, anything else through Home Assistant.",
+    "owner": "lordhaon",
+    "category": "General",
+    "imageUrl": "",
+    "versions": []
+  }
+]

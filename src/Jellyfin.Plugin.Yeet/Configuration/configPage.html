@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>YEET</title>
+</head>
+<body>
+    <div id="YeetConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <h2 class="sectionTitle">YEET</h2>
+                <p>Open the <b>⋮</b> menu on a movie, show, episode or album and pick <b>Yeet to device</b>. Devices with Jellyfin already open
+                    are listed automatically. Add a device below to have it turned on first: a Roku is launched directly, anything else through Home Assistant.</p>
+
+                <form id="YeetConfigForm">
+                    <div class="inputContainer">
+                        <input id="HomeAssistantUrl" type="text" is="emby-input" label="Home Assistant URL" placeholder="http://192.168.2.10:8123" />
+                        <div class="fieldDescription">Only needed for devices that are not Rokus. The address Jellyfin can reach Home Assistant on.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input id="HomeAssistantToken" type="password" is="emby-input" label="Long-lived access token" autocomplete="off" />
+                        <div class="fieldDescription">In Home Assistant: your profile → Security → Long-lived access tokens → Create token.</div>
+                    </div>
+
+                    <h3 class="sectionTitle" style="margin-top:1.5em;">Devices</h3>
+                    <div id="YeetDevices"></div>
+                    <button is="emby-button" type="button" id="YeetAddDevice" class="raised emby-button" style="margin-bottom:1.5em;">
+                        <span>Add device</span>
+                    </button>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pluginId = '7ee537fa-deb2-43dc-8ba6-7cd0bce1242c';
+                var page = document.querySelector('#YeetConfigPage');
+                var list = page.querySelector('#YeetDevices');
+
+                function newId() {
+                    return 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, function () {
+                        return Math.floor(Math.random() * 16).toString(16);
+                    });
+                }
+
+                function field(label, key, value, placeholder, description) {
+                    var wrap = document.createElement('div');
+                    wrap.className = 'inputContainer';
+                    var input = document.createElement('input');
+                    input.type = 'text';
+                    input.setAttribute('is', 'emby-input');
+                    input.setAttribute('label', label);
+                    input.setAttribute('data-key', key);
+                    input.placeholder = placeholder || '';
+                    input.value = value || '';
+                    wrap.appendChild(input);
+                    var desc = document.createElement('div');
+                    desc.className = 'fieldDescription';
+                    desc.textContent = description;
+                    wrap.appendChild(desc);
+                    return wrap;
+                }
+
+                function addRow(device) {
+                    var row = document.createElement('div');
+                    row.className = 'yeetDevice';
+                    row.setAttribute('data-device-id', device.Id || newId());
+                    row.style.cssText = 'border:1px solid rgba(128,128,128,.4);border-radius:6px;padding:1em;margin-bottom:1em;';
+
+                    row.appendChild(field('Name', 'Name', device.Name, 'Living Room TV', 'Shown in the device list.'));
+                    row.appendChild(field('Jellyfin device name', 'SessionMatch', device.SessionMatch, 'Living Room Roku',
+                        'Part of the name this device shows under Dashboard → Devices. Leave empty to use the name above.'));
+                    row.appendChild(field('Roku address', 'RokuAddress', device.RokuAddress, '192.168.2.30',
+                        'For a Roku: its IP address. Jellyfin then turns it on and starts the item itself, and the Home Assistant fields below are not needed.'));
+                    row.appendChild(field('Home Assistant entity', 'HaEntityId', device.HaEntityId, 'media_player.living_room_roku',
+                        'A media_player is turned on and switched to the app below. A script, scene or button is run as it is.'));
+                    row.appendChild(field('App to open', 'AppSource', device.AppSource == null ? 'Jellyfin' : device.AppSource, 'Jellyfin',
+                        'Only used for media_player entities. Must match the app name Home Assistant lists as a source.'));
+
+                    var test = document.createElement('button');
+                    test.type = 'button';
+                    test.setAttribute('is', 'emby-button');
+                    test.className = 'raised emby-button';
+                    test.innerHTML = '<span>Test</span>';
+                    test.addEventListener('click', function () {
+                        Dashboard.showLoadingMsg();
+                        save().then(function () {
+                            return ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('Yeet/Devices/' + row.getAttribute('data-device-id') + '/Wake') });
+                        }).then(function () {
+                            Dashboard.hideLoadingMsg();
+                            Dashboard.alert('Sent. The device should turn on and open Jellyfin.');
+                        }).catch(function (err) {
+                            Dashboard.hideLoadingMsg();
+                            var fallback = 'The test failed.';
+                            if (err && typeof err.json === 'function') {
+                                err.json().then(function (j) { Dashboard.alert((j && j.message) || fallback); }).catch(function () { Dashboard.alert(fallback); });
+                            } else {
+                                Dashboard.alert(fallback);
+                            }
+                        });
+                    });
+                    row.appendChild(test);
+
+                    var remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.setAttribute('is', 'emby-button');
+                    remove.className = 'raised emby-button';
+                    remove.style.marginLeft = '.5em';
+                    remove.innerHTML = '<span>Remove</span>';
+                    remove.addEventListener('click', function () { row.remove(); });
+                    row.appendChild(remove);
+
+                    list.appendChild(row);
+                }
+
+                function readDevices() {
+                    var devices = [];
+                    list.querySelectorAll('.yeetDevice').forEach(function (row) {
+                        var d = { Id: row.getAttribute('data-device-id') };
+                        row.querySelectorAll('[data-key]').forEach(function (input) {
+                            d[input.getAttribute('data-key')] = input.value.trim();
+                        });
+                        if (d.Name) {
+                            devices.push(d);
+                        }
+                    });
+                    return devices;
+                }
+
+                function save() {
+                    return ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.HomeAssistantUrl = page.querySelector('#HomeAssistantUrl').value.trim();
+                        config.HomeAssistantToken = page.querySelector('#HomeAssistantToken').value.trim();
+                        config.Devices = readDevices();
+                        return ApiClient.updatePluginConfiguration(pluginId, config);
+                    });
+                }
+
+                page.querySelector('#YeetAddDevice').addEventListener('click', function () {
+                    addRow({});
+                });
+
+                page.addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#HomeAssistantUrl').value = config.HomeAssistantUrl || '';
+                        page.querySelector('#HomeAssistantToken').value = config.HomeAssistantToken || '';
+                        list.innerHTML = '';
+                        (config.Devices || []).forEach(addRow);
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                page.querySelector('#YeetConfigForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    save().then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>
