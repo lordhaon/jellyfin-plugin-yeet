@@ -57,22 +57,6 @@ For anything more involved than "turn on and open the app" (switching a receiver
 - The menu option depends on Jellyfin's web UI markup. A major Jellyfin web update may need a small script fix.
 - Any signed-in user can wake a configured device.
 
-## Publishing (for the repo owner)
-
-1. Create a GitHub repo named `jellyfin-plugin-yeet` and push this folder to the `main` branch.
-2. Tag a release:
-   ```bash
-   git tag -a v1.0.0 -m "First release"
-   git push origin v1.0.0
-   ```
-3. The **Release** action builds the DLL, attaches `yeet_1.0.0.0.zip` to a GitHub release, and adds the version to `manifest.json` on `main`.
-
-To build locally: `dotnet build src/Jellyfin.Plugin.Yeet/Jellyfin.Plugin.Yeet.csproj -c Release -o out`. This needs the .NET 10 SDK.
-
-### When Jellyfin moves to a new major version
-
-Update `JellyfinVersion` and `TargetFramework` in the `.csproj`, and `TARGET_ABI` in `scripts/update_manifest.py`, then tag a new release.
-
 ## API
 
 | Method | Path | Purpose |
