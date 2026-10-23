@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "1.1.0.0",
+        "changelog": "Android TV and Google TV support through Home Assistant's Android TV Remote integration",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/lordhaon/jellyfin-plugin-yeet/releases/download/v1.1.0/yeet_1.1.0.0.zip",
+        "checksum": "ec2cf1dde3977d7579a27041a83ea161",
+        "timestamp": "2026-10-23T03:09:57Z"
+      },
+      {
         "version": "1.0.0.0",
         "changelog": "First release",
         "targetAbi": "12.0.0.0",
