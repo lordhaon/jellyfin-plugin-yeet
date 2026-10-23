@@ -35,10 +35,19 @@ To install without a repository, copy `Jellyfin.Plugin.Yeet.dll` into `<jellyfin
 | Name | What the picker shows, e.g. `Living Room TV` |
 | Jellyfin device name | Part of the name the device has under Dashboard → Devices. This is how the plugin spots the device once its app is open. |
 | Roku address | The Roku's IP address. When set, the Home Assistant fields are ignored for this device. Give the Roku a fixed IP in your router. |
+| Home Assistant entity (Android TV / Google TV) | The `remote.…` entity from Home Assistant's **Android TV Remote** integration. It turns the TV on and opens Jellyfin (`org.jellyfin.androidtv`). |
 | Home Assistant entity | A `media_player` (turned on, then switched to the app below), or a `script`, `scene` or `button` that does the waking itself |
-| App to open | The source name Home Assistant lists for the Jellyfin app. Only used for `media_player` entities. |
+| App to open | For a `media_player`: the source name Home Assistant lists for the Jellyfin app, or an Android package name. Leave as `Jellyfin` for Android TV. |
 
 3. **Save**, then **Test** to check the device turns on and opens Jellyfin.
+
+### Android TV / Google TV
+
+1. In Home Assistant: **Settings → Devices & services → Add integration → Android TV Remote**, enter the TV's IP address, and type the pairing code it shows on screen.
+2. In YEET, add the device with the `remote.…` entity it created, and leave **App to open** as `Jellyfin`.
+3. On the TV, open Jellyfin once and sign in, so it signs in by itself next time.
+
+YEET turns the TV on, opens Jellyfin, waits for it to connect, then starts playback with Jellyfin's remote control. Choose a device that is already on to skip the wait.
 
 For anything more involved than "turn on and open the app" (switching a receiver's input, for example), make a Home Assistant script and enter that as the entity.
 

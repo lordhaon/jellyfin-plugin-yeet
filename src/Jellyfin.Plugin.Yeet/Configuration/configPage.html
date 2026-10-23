@@ -77,10 +77,10 @@
                         'Part of the name this device shows under Dashboard → Devices. Leave empty to use the name above.'));
                     row.appendChild(field('Roku address', 'RokuAddress', device.RokuAddress, '192.168.2.30',
                         'For a Roku: its IP address. Jellyfin then turns it on and starts the item itself, and the Home Assistant fields below are not needed.'));
-                    row.appendChild(field('Home Assistant entity', 'HaEntityId', device.HaEntityId, 'media_player.living_room_roku',
-                        'A media_player is turned on and switched to the app below. A script, scene or button is run as it is.'));
+                    row.appendChild(field('Home Assistant entity', 'HaEntityId', device.HaEntityId, 'remote.living_room_tv',
+                        'Android TV / Google TV: the remote entity from the Android TV Remote integration. Otherwise a media_player (turned on, then switched to the app below), or a script, scene or button that does the waking itself.'));
                     row.appendChild(field('App to open', 'AppSource', device.AppSource == null ? 'Jellyfin' : device.AppSource, 'Jellyfin',
-                        'Only used for media_player entities. Must match the app name Home Assistant lists as a source.'));
+                        'The app name Home Assistant lists as a source, or an Android package name. For Android TV, Jellyfin is opened automatically.'));
 
                     var test = document.createElement('button');
                     test.type = 'button';

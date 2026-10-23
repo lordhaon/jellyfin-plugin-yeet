@@ -32,6 +32,11 @@ public class HomeAssistantException : Exception
 /// </summary>
 public class HomeAssistantClient
 {
+    /// <summary>
+    /// The Jellyfin app's package name on Android TV and Google TV.
+    /// </summary>
+    public const string AndroidTvPackage = "org.jellyfin.androidtv";
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<HomeAssistantClient> _logger;
 
@@ -72,6 +77,10 @@ public class HomeAssistantClient
 
         switch (domain)
         {
+            case "remote":
+                // Android TV Remote integration: turning the remote on with an activity wakes the TV and opens that app.
+                await CallServiceAsync(config, "remote", "turn_on", entity, new() { ["activity"] = AndroidTvApp(device) }, cancellationToken).ConfigureAwait(false);
+                break;
             case "media_player":
                 // A set-top box that is already on may reject turn_on; launching the app is what matters.
                 try
@@ -84,7 +93,17 @@ public class HomeAssistantClient
                 }
 
                 var source = string.IsNullOrWhiteSpace(device.AppSource) ? "Jellyfin" : device.AppSource.Trim();
-                await CallServiceAsync(config, "media_player", "select_source", entity, source, cancellationToken).ConfigureAwait(false);
+                if (IsPackageName(source))
+                {
+                    // Android TV media players launch apps by package name rather than from a source list.
+                    var app = new Dictionary<string, string> { ["media_content_type"] = "app", ["media_content_id"] = source };
+                    await CallServiceAsync(config, "media_player", "play_media", entity, app, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await CallServiceAsync(config, "media_player", "select_source", entity, new() { ["source"] = source }, cancellationToken).ConfigureAwait(false);
+                }
+
                 break;
             case "button":
             case "input_button":
@@ -100,13 +119,25 @@ public class HomeAssistantClient
         }
     }
 
-    private async Task CallServiceAsync(PluginConfiguration config, string domain, string service, string entity, string? source, CancellationToken cancellationToken)
+    // "Jellyfin" (the default for set-top boxes) means the Jellyfin app, which on Android TV is its package name.
+    private static string AndroidTvApp(YeetDevice device)
+    {
+        var app = (device.AppSource ?? string.Empty).Trim();
+        return IsPackageName(app) ? app : AndroidTvPackage;
+    }
+
+    private static bool IsPackageName(string value)
+    {
+        return value.Contains('.', StringComparison.Ordinal) && !value.Contains(' ', StringComparison.Ordinal);
+    }
+
+    private async Task CallServiceAsync(PluginConfiguration config, string domain, string service, string entity, Dictionary<string, string>? data, CancellationToken cancellationToken)
     {
         var url = config.HomeAssistantUrl.Trim().TrimEnd('/') + "/api/services/" + domain + "/" + service;
         var body = new Dictionary<string, string> { ["entity_id"] = entity };
-        if (source is not null)
+        foreach (var pair in data ?? new Dictionary<string, string>())
         {
-            body["source"] = source;
+            body[pair.Key] = pair.Value;
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(body) };
